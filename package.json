@@ -8,6 +8,7 @@
   "types": "./dist/index.d.ts",
   "repository": "https://github.com/bilaleren/tjk-api",
   "license": "MIT",
+  "files": ["dist"],
   "keywords": ["tjk", "tjk-api", "tjk api"],
   "scripts": {
     "prebuild": "yarn run lint && yarn run typecheck && rm -rf dist",
