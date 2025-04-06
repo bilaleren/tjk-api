@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "preserveConstEnums": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "noUnusedLocals": false,
+    "skipLibCheck": false,
+    "noImplicitAny": false,
+    "noImplicitReturns": true,
+    "noUnusedParameters": false,
+    "useDefineForClassFields": true,
+    "allowSyntheticDefaultImports": true
+  }
+}

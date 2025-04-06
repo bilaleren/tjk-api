@@ -1,0 +1,41 @@
+{
+  "name": "tjk-api",
+  "version": "1.0.0",
+  "description": "TJK (Türkiye Jokey Kulübü) tarafından sağlanan resmi API kaynağından program, sonuçlar, AGF, muhtemel oranlar ve benzeri verileri çeken bir Node.js paketi.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "repository": "https://github.com/bilaleren/tjk-api",
+  "license": "MIT",
+  "scripts": {
+    "prebuild": "yarn run lint && yarn run typecheck && rm -rf dist",
+    "prepack": "yarn run build",
+    "typecheck": "tsc --noEmit",
+    "build": "NODE_ENV=production rollup -c",
+    "lint": "eslint \"./src/**/*.ts\" --quiet",
+    "lint:fix": "eslint \"./src/**/*.ts\" --fix",
+    "format": "prettier --write \"./src/**/*.ts\""
+  },
+  "dependencies": {
+    "axios": "^1.8.3"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/node": "^22.10.7",
+    "@typescript-eslint/eslint-plugin": "^8.24.1",
+    "@typescript-eslint/parser": "^8.24.1",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-n": "^17.16.2",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-promise": "^7.2.1",
+    "prettier": "^3.5.1",
+    "rollup": "^4.35.0",
+    "rollup-plugin-dts": "^6.1.1",
+    "rollup-plugin-node-externals": "^8.0.0",
+    "typescript": "^5.7.3"
+  }
+}
