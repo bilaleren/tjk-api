@@ -1,5 +1,10 @@
 # TJK API
 
+[![License MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/bilaleren/tjk-api/blob/master/LICENCE)
+[![NPM](https://img.shields.io/npm/v/tjk-api.svg)](https://www.npmjs.com/package/tjk-api)
+[![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+[![npm downloads](https://img.shields.io/npm/dt/tjk-api.svg)](#kurulum)
+
 TJK (Türkiye Jokey Kulübü) tarafından sağlanan resmi API kaynağından program, sonuçlar, AGF, muhtemel oranlar ve benzeri verileri çeken bir Node.js paketi.
 
 # Kurulum
