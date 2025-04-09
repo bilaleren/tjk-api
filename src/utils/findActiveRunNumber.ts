@@ -1,7 +1,5 @@
-import type { TjkProgram, TjkResults, TjkDetailedProgram } from '../types';
-
 export interface FindActiveRunNumberOptions {
-  runs: (TjkProgram.Run | TjkResults.Run | TjkDetailedProgram.Run)[];
+  runs: Array<{ no: number; startTime: string }>;
   raceDate: string;
   raceClosingTime: string;
   jumpToLastRun?: boolean;
