@@ -1,6 +1,6 @@
 {
   "name": "tjk-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TJK (Türkiye Jokey Kulübü) tarafından sağlanan resmi API kaynağından program, sonuçlar, AGF, muhtemel oranlar ve benzeri verileri çeken bir Node.js paketi.",
   "type": "module",
   "main": "./dist/index.cjs",
