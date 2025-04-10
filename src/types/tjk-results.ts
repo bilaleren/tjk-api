@@ -54,7 +54,7 @@ export declare namespace TjkResults {
     agf2: HorseAgf | undefined;
     foal: string | undefined;
     position: number;
-    result: number | undefined;
+    resultRank: number | undefined;
     timing: string | undefined;
     odds: number | undefined;
     daysOff: string | undefined;

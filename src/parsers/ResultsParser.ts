@@ -124,7 +124,7 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         YAS: age,
         FOAL: foal,
         START: position,
-        SONUC: result,
+        SONUC: resultRank,
         DERECE: timing,
         GANYAN: odds,
         KILO: weight,
@@ -162,8 +162,10 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         agf2: this.parseHorseAgf(horse, 2),
         foal: foal || undefined,
         position: +position,
-        result:
-          typeof result === 'string' && result !== '' ? +result : undefined,
+        resultRank:
+          typeof resultRank === 'string' && resultRank !== ''
+            ? +resultRank
+            : undefined,
         timing: timing || undefined,
         odds: odds ? parseNumber(odds, 0) : undefined,
         weight: isDefined(weight) ? +weight : undefined,
