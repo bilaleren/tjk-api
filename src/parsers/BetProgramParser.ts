@@ -93,8 +93,8 @@ class BetProgramParser extends Parser<TjkBetProgram.Race[]> {
         gender: gender || undefined,
         runName: runName || undefined,
         specialName: specialName || undefined,
-        awards,
-        bonuses,
+        awards: awards.map((value: any) => parseNumber(value, 0)),
+        bonuses: bonuses.map((value: any) => parseNumber(value, 0)),
         currencyUnit,
         info,
         horses: this.parseHorses(horses, runId, raceDate)

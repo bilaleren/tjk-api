@@ -34,8 +34,8 @@ export declare namespace TjkProgram {
     runName: string | undefined;
     genderName: string | undefined;
     specialName: string | undefined;
-    awards: string[];
-    bonuses: string[];
+    awards: number[];
+    bonuses: number[];
     currencyUnit: string;
     info: string;
     betInfo: string;
