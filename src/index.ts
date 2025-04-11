@@ -2,8 +2,6 @@ export {
   default,
   default as TjkApi,
   TjkServices,
-  type CacheStore,
-  type TjkCacheOptions,
   type TjkApiConstructorOptions,
   type TjkServiceParams,
   type TjkProbablesServiceParams,

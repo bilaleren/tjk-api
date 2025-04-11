@@ -33,32 +33,6 @@ const { data: races } = await api.getProgram();
 console.log('races:', races);
 ```
 
-# Önbelleğe Alma
-
-TJK servisleri, her istek yanıtında bir `checksum` değeri üretir. Bu değer kullanılarak ilgili servisin verisinde herhangi bir değişiklik olup olmadığı kontrol edilebilir.
-
-```typescript
-import { TjkApi, type CacheStore, type TjkSuccessResponse } from 'tjk-api';
-
-const store: CacheStore = new Map<string, TjkSuccessResponse>();
-
-const api = new TjkApi({
-  authKey: 'TJK Auth Key',
-  cache: {
-    enabled: true,
-    store // Opsiyonel
-  }
-});
-
-const { data, stale, checksum } = await api.getProgram();
-
-if (stale) {
-  console.log('eski veri:', data, 'eski checksum:', checksum);
-} else {
-  console.log('yeni veri:', data, 'yeni checksum:', checksum);
-}
-```
-
 # Hata Ayıklama
 
 ```typescript

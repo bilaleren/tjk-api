@@ -73,29 +73,14 @@ export interface TjkHippodromesServiceParams {
   checksum?: string;
 }
 
-export interface CacheStore {
-  set(key: string, value: TjkSuccessResponse): void;
-  get(key: string): TjkSuccessResponse | undefined;
-  has(key: string): boolean;
-  delete(key: string): boolean;
-  clear(): void;
-}
-
-export interface TjkCacheOptions {
-  store?: CacheStore;
-  enabled?: boolean;
-}
-
 export interface TjkApiConstructorOptions {
   authKey: string;
   baseURL?: string;
-  cache?: TjkCacheOptions;
   axiosDefaults?: CreateAxiosDefaults;
 }
 
 class TjkApi {
   readonly client!: AxiosInstance;
-  readonly cacheStore: CacheStore | undefined = undefined;
 
   private readonly agfParser!: AgfParser;
   private readonly programParser!: ProgramParser;
@@ -107,7 +92,7 @@ class TjkApi {
   private readonly detailedProgramParser!: DetailedProgramParser;
 
   constructor(options: TjkApiConstructorOptions) {
-    const { authKey, baseURL, cache, axiosDefaults } = options;
+    const { authKey, baseURL, axiosDefaults } = options;
 
     this.client = axios.create({
       timeout: 10 * 1000,
@@ -121,10 +106,6 @@ class TjkApi {
         'X-Auth': authKey
       }
     });
-
-    if (cache?.enabled) {
-      this.cacheStore = cache.store || new Map<string, TjkSuccessResponse>();
-    }
 
     this.agfParser = new AgfParser();
     this.programParser = new ProgramParser();
@@ -141,7 +122,6 @@ class TjkApi {
   ): Promise<TjkResponse<TjkProgram.Race[]>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(
@@ -151,7 +131,6 @@ class TjkApi {
 
     return {
       data: this.programParser.parse(data?.yarislar),
-      stale,
       checksum,
       updateTime
     };
@@ -162,7 +141,6 @@ class TjkApi {
   ): Promise<TjkResponse<TjkResults.Race[]>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(
@@ -172,7 +150,6 @@ class TjkApi {
 
     return {
       data: this.resultsParser.parse(data?.yarislar),
-      stale,
       checksum,
       updateTime
     };
@@ -183,14 +160,12 @@ class TjkApi {
   ): Promise<TjkResponse<TjkBetProgram.Race[]>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(TjkServices.BET_PROGRAM, params);
 
     return {
       data: this.betProgramParser.parse(data?.yarislar),
-      stale,
       checksum,
       updateTime
     };
@@ -199,7 +174,6 @@ class TjkApi {
   async getAgf(params?: TjkServiceParams): Promise<TjkResponse<TjkAgf.Race[]>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(
@@ -209,7 +183,6 @@ class TjkApi {
 
     return {
       data: this.agfParser.parse(data?.yarislar),
-      stale,
       checksum,
       updateTime
     };
@@ -220,7 +193,6 @@ class TjkApi {
   ): Promise<TjkResponse<TjkProbables.Race[]>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(
@@ -230,7 +202,6 @@ class TjkApi {
 
     return {
       data: this.probablesParser.parse(data?.yarislar),
-      stale,
       checksum,
       updateTime
     };
@@ -241,7 +212,6 @@ class TjkApi {
   ): Promise<TjkResponse<TjkDetailedProgram.Race[]>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(
@@ -251,7 +221,6 @@ class TjkApi {
 
     return {
       data: this.detailedProgramParser.parse(data?.hippodromes),
-      stale,
       checksum,
       updateTime
     };
@@ -262,7 +231,6 @@ class TjkApi {
   ): Promise<TjkResponse<Hippodrome[]>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(TjkServices.HIPPODROMES, params);
@@ -285,7 +253,6 @@ class TjkApi {
           abroad
         };
       }),
-      stale,
       checksum,
       updateTime
     };
@@ -296,7 +263,6 @@ class TjkApi {
   ): Promise<TjkResponse<TjkHorseDetail.Horse>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(
@@ -308,7 +274,6 @@ class TjkApi {
 
     return {
       data: this.horseDetailParser.parse(data.at),
-      stale,
       checksum,
       updateTime
     };
@@ -319,7 +284,6 @@ class TjkApi {
   ): Promise<TjkResponse<TjkJockeyChanges.Race[]>> {
     const {
       data,
-      stale = false,
       checksum,
       updatetime: updateTime
     } = await this.getServiceResponse(
@@ -329,7 +293,6 @@ class TjkApi {
 
     return {
       data: this.jockeyChangesParser.parse(data?.yarislar),
-      stale,
       checksum,
       updateTime
     };
@@ -339,21 +302,10 @@ class TjkApi {
     service: TjkServices,
     params: Record<string, any> | undefined
   ): Promise<TjkSuccessResponse> {
-    const cacheKey = this.createCacheKey(service, params);
-    const cachedData =
-      this.cacheStore && !params?.checksum
-        ? this.cacheStore.get(cacheKey)
-        : undefined;
-
     const { data } = await this.client.get<
       TjkServiceResponse | null | undefined
     >(`/${service}`, {
-      params: cachedData
-        ? {
-            ...params,
-            checksum: cachedData.checksum
-          }
-        : params
+      params
     });
 
     if (!isPlainObject(data)) {
@@ -362,39 +314,7 @@ class TjkApi {
       throw new TjkApiError(data);
     }
 
-    if (cachedData && !data.data) {
-      return {
-        ...cachedData,
-        stale: true
-      };
-    }
-
-    if (this.cacheStore && !params?.checksum) {
-      this.cacheStore.set(cacheKey, data);
-    }
-
     return data;
-  }
-
-  private createCacheKey(
-    service: TjkServices,
-    params: Record<string, any> | undefined
-  ): string {
-    let cacheKey = '';
-
-    if (!params) {
-      return service;
-    }
-
-    for (const key in params) {
-      if (key === 'checksum') {
-        continue;
-      }
-
-      cacheKey += params[key];
-    }
-
-    return cacheKey ? `${service}:${cacheKey}` : service;
   }
 
   private getServiceParams(

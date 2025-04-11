@@ -1,6 +1,5 @@
 export interface TjkResponse<TData> {
   data: TData;
-  stale: boolean;
   checksum: string;
   updateTime: number;
 }
