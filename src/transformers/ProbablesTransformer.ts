@@ -1,8 +1,12 @@
-import Parser from './Parser';
+import Transformer from './Transformer';
 import type { TjkProbables } from '../types';
 
-class ProbablesParser extends Parser<TjkProbables.Race[]> {
-  parse(races: unknown): TjkProbables.Race[] {
+class ProbablesTransformer extends Transformer<TjkProbables.Race[]> {
+  static create(): ProbablesTransformer {
+    return new ProbablesTransformer();
+  }
+
+  transform(races: unknown): TjkProbables.Race[] {
     if (!Array.isArray(races)) {
       return [];
     }
@@ -25,12 +29,12 @@ class ProbablesParser extends Parser<TjkProbables.Race[]> {
         hippodrome,
         location,
         date,
-        runs: this.parseRuns(runs)
+        runs: this.transformRuns(runs)
       };
     });
   }
 
-  private parseRuns(runs: any[]): TjkProbables.Run[] {
+  protected transformRuns(runs: any[]): TjkProbables.Run[] {
     return runs.map<TjkProbables.Run>((run) => {
       const {
         NO: no,
@@ -45,24 +49,24 @@ class ProbablesParser extends Parser<TjkProbables.Race[]> {
         startTime,
         status,
         lastUpdateTime: lastUpdateTime || undefined,
-        bets: this.parseBets(bets)
+        bets: this.transformBets(bets)
       };
     });
   }
 
-  private parseBets(bets: any[]): TjkProbables.Bet[] {
+  protected transformBets(bets: any[]): TjkProbables.Bet[] {
     return bets.map<TjkProbables.Bet>((bet) => {
       const { BAHIS: name, DURUM: status, muhtemeller: probables = [] } = bet;
 
       return {
         name,
         status,
-        probables: this.parseBetProbables(probables)
+        probables: this.transformBetProbables(probables)
       };
     });
   }
 
-  private parseBetProbables(probables: any[]): TjkProbables.Probable[] {
+  protected transformBetProbables(probables: any[]): TjkProbables.Probable[] {
     return probables.map<TjkProbables.Probable>((probable) => {
       const {
         ATADI: horseName,
@@ -75,7 +79,7 @@ class ProbablesParser extends Parser<TjkProbables.Race[]> {
       return {
         horseName: horseName || undefined,
         odds: odds && odds !== '-' ? odds : undefined,
-        runners: this.parseProbableRunners(probable),
+        runners: this.transformProbableRunners(probable),
         stablemate: stablemate || undefined,
         agf: agf || undefined,
         outOfRace: outOfRace || undefined
@@ -83,7 +87,7 @@ class ProbablesParser extends Parser<TjkProbables.Race[]> {
     });
   }
 
-  private parseProbableRunners(probable: any): number[] {
+  protected transformProbableRunners(probable: any): number[] {
     const runners: number[] = [];
 
     for (let i = 1; i <= 2; i++) {
@@ -98,4 +102,4 @@ class ProbablesParser extends Parser<TjkProbables.Race[]> {
   }
 }
 
-export default ProbablesParser;
+export default ProbablesTransformer;

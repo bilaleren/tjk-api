@@ -1,9 +1,13 @@
-import Parser from './Parser';
+import Transformer from './Transformer';
 import { parseNumber } from '../utils';
 import type { TjkAgf } from '../types';
 
-class AgfParser extends Parser<TjkAgf.Race[]> {
-  parse(races: unknown): TjkAgf.Race[] {
+class AgfTransformer extends Transformer<TjkAgf.Race[]> {
+  static create(): AgfTransformer {
+    return new AgfTransformer();
+  }
+
+  transform(races: unknown): TjkAgf.Race[] {
     if (!Array.isArray(races)) {
       return [];
     }
@@ -24,23 +28,23 @@ class AgfParser extends Parser<TjkAgf.Race[]> {
         hippodrome,
         location,
         date,
-        bets: this.parseBets(bets)
+        bets: this.transformBets(bets)
       };
     });
   }
 
-  private parseRuns(runs: any[]): TjkAgf.Run[] {
+  protected transformRuns(runs: any[]): TjkAgf.Run[] {
     return runs.map<TjkAgf.Run>((run) => {
       const { NO: no, atlar: horses = [] } = run;
 
       return {
         no: +no,
-        horses: this.parseHorses(horses)
+        horses: this.transformHorses(horses)
       };
     });
   }
 
-  private parseBets(bets: any[]): TjkAgf.Bet[] {
+  protected transformBets(bets: any[]): TjkAgf.Bet[] {
     return bets.map<TjkAgf.Bet>((bet) => {
       const {
         BAHIS: name,
@@ -53,12 +57,12 @@ class AgfParser extends Parser<TjkAgf.Race[]> {
         name,
         official,
         lastUpdateTime,
-        runs: this.parseRuns(runs)
+        runs: this.transformRuns(runs)
       };
     });
   }
 
-  private parseHorses(horses: any[]): TjkAgf.Horse[] {
+  protected transformHorses(horses: any[]): TjkAgf.Horse[] {
     return horses.map<TjkAgf.Horse>((horse) => {
       const {
         NO: no,
@@ -85,4 +89,4 @@ class AgfParser extends Parser<TjkAgf.Race[]> {
   }
 }
 
-export default AgfParser;
+export default AgfTransformer;

@@ -1,14 +1,15 @@
 import axios, { type AxiosInstance, type CreateAxiosDefaults } from 'axios';
 import {
-  AgfParser,
-  ProgramParser,
-  ResultsParser,
-  BetProgramParser,
-  ProbablesParser,
-  HorseDetailParser,
-  JockeyChangesParser,
-  DetailedProgramParser
-} from './parsers';
+  Transformer,
+  AgfTransformer,
+  ResultsTransformer,
+  ProgramTransformer,
+  ProbablesTransformer,
+  BetProgramTransformer,
+  HorseDetailTransformer,
+  JockeyChangesTransformer,
+  DetailedProgramTransformer
+} from './transformers';
 import { isPlainObject, getFormatedDate } from './utils';
 import { TjkApiError, TjkTypeError } from './errors';
 import {
@@ -77,22 +78,53 @@ export interface TjkApiConstructorOptions {
   authKey: string;
   baseURL?: string;
   axiosDefaults?: CreateAxiosDefaults;
+  agfTransformer?: Transformer<TjkAgf.Race[]>;
+  programTransformer?: Transformer<TjkProgram.Race[]>;
+  resultsTransformer?: Transformer<TjkResults.Race[]>;
+  betProgramTransformer?: Transformer<TjkBetProgram.Race[]>;
+  probablesTransformer?: Transformer<TjkProbables.Race[]>;
+  horseDetailTransformer?: Transformer<TjkHorseDetail.Horse>;
+  jockeyChangesTransformer?: Transformer<TjkJockeyChanges.Race[]>;
+  detailedProgramTransformer?: Transformer<TjkDetailedProgram.Race[]>;
 }
 
 class TjkApi {
   readonly client!: AxiosInstance;
 
-  private readonly agfParser!: AgfParser;
-  private readonly programParser!: ProgramParser;
-  private readonly resultsParser!: ResultsParser;
-  private readonly betProgramParser!: BetProgramParser;
-  private readonly probablesParser!: ProbablesParser;
-  private readonly horseDetailParser!: HorseDetailParser;
-  private readonly jockeyChangesParser!: JockeyChangesParser;
-  private readonly detailedProgramParser!: DetailedProgramParser;
+  private readonly agfTransformer!: Transformer<TjkAgf.Race[]>;
+
+  private readonly programTransformer!: Transformer<TjkProgram.Race[]>;
+
+  private readonly resultsTransformer!: Transformer<TjkResults.Race[]>;
+
+  private readonly betProgramTransformer!: Transformer<TjkBetProgram.Race[]>;
+
+  private readonly probablesTransformer!: Transformer<TjkProbables.Race[]>;
+
+  private readonly horseDetailTransformer!: Transformer<TjkHorseDetail.Horse>;
+
+  private readonly jockeyChangesTransformer!: Transformer<
+    TjkJockeyChanges.Race[]
+  >;
+
+  private readonly detailedProgramTransformer!: Transformer<
+    TjkDetailedProgram.Race[]
+  >;
 
   constructor(options: TjkApiConstructorOptions) {
-    const { authKey, baseURL, axiosDefaults } = options;
+    const {
+      authKey,
+      baseURL,
+      axiosDefaults,
+      agfTransformer = AgfTransformer.create(),
+      programTransformer = ProgramTransformer.create(),
+      resultsTransformer = ResultsTransformer.create(),
+      betProgramTransformer = BetProgramTransformer.create(),
+      probablesTransformer = ProbablesTransformer.create(),
+      horseDetailTransformer = HorseDetailTransformer.create(),
+      jockeyChangesTransformer = JockeyChangesTransformer.create(),
+      detailedProgramTransformer = DetailedProgramTransformer.create()
+    } = options;
 
     this.client = axios.create({
       timeout: 10 * 1000,
@@ -107,14 +139,14 @@ class TjkApi {
       }
     });
 
-    this.agfParser = new AgfParser();
-    this.programParser = new ProgramParser();
-    this.resultsParser = new ResultsParser();
-    this.betProgramParser = new BetProgramParser();
-    this.probablesParser = new ProbablesParser();
-    this.horseDetailParser = new HorseDetailParser();
-    this.jockeyChangesParser = new JockeyChangesParser();
-    this.detailedProgramParser = new DetailedProgramParser();
+    this.agfTransformer = agfTransformer;
+    this.programTransformer = programTransformer;
+    this.resultsTransformer = resultsTransformer;
+    this.betProgramTransformer = betProgramTransformer;
+    this.probablesTransformer = probablesTransformer;
+    this.horseDetailTransformer = horseDetailTransformer;
+    this.jockeyChangesTransformer = jockeyChangesTransformer;
+    this.detailedProgramTransformer = detailedProgramTransformer;
   }
 
   async getProgram(
@@ -130,7 +162,7 @@ class TjkApi {
     );
 
     return {
-      data: this.programParser.parse(data?.yarislar),
+      data: this.programTransformer.transform(data?.yarislar),
       checksum,
       updateTime
     };
@@ -149,7 +181,7 @@ class TjkApi {
     );
 
     return {
-      data: this.resultsParser.parse(data?.yarislar),
+      data: this.resultsTransformer.transform(data?.yarislar),
       checksum,
       updateTime
     };
@@ -165,7 +197,7 @@ class TjkApi {
     } = await this.getServiceResponse(TjkServices.BET_PROGRAM, params);
 
     return {
-      data: this.betProgramParser.parse(data?.yarislar),
+      data: this.betProgramTransformer.transform(data?.yarislar),
       checksum,
       updateTime
     };
@@ -182,7 +214,7 @@ class TjkApi {
     );
 
     return {
-      data: this.agfParser.parse(data?.yarislar),
+      data: this.agfTransformer.transform(data?.yarislar),
       checksum,
       updateTime
     };
@@ -201,7 +233,7 @@ class TjkApi {
     );
 
     return {
-      data: this.probablesParser.parse(data?.yarislar),
+      data: this.probablesTransformer.transform(data?.yarislar),
       checksum,
       updateTime
     };
@@ -220,7 +252,7 @@ class TjkApi {
     );
 
     return {
-      data: this.detailedProgramParser.parse(data?.hippodromes),
+      data: this.detailedProgramTransformer.transform(data?.hippodromes),
       checksum,
       updateTime
     };
@@ -273,7 +305,7 @@ class TjkApi {
     );
 
     return {
-      data: this.horseDetailParser.parse(data.at),
+      data: this.horseDetailTransformer.transform(data.at),
       checksum,
       updateTime
     };
@@ -292,7 +324,7 @@ class TjkApi {
     );
 
     return {
-      data: this.jockeyChangesParser.parse(data?.yarislar),
+      data: this.jockeyChangesTransformer.transform(data?.yarislar),
       checksum,
       updateTime
     };

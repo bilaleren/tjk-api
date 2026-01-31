@@ -1,8 +1,12 @@
-import Parser from './Parser';
+import Transformer from './Transformer';
 import type { TjkJockeyChanges } from '../types';
 
-class JockeyChangesParser extends Parser<TjkJockeyChanges.Race[]> {
-  parse(races: unknown): TjkJockeyChanges.Race[] {
+class JockeyChangesTransformer extends Transformer<TjkJockeyChanges.Race[]> {
+  static create(): JockeyChangesTransformer {
+    return new JockeyChangesTransformer();
+  }
+
+  transform(races: unknown): TjkJockeyChanges.Race[] {
     if (!Array.isArray(races)) {
       return [];
     }
@@ -23,12 +27,12 @@ class JockeyChangesParser extends Parser<TjkJockeyChanges.Race[]> {
         hippodrome,
         location,
         date,
-        changes: this.parseChanges(changes)
+        changes: this.transformChanges(changes)
       };
     });
   }
 
-  private parseChanges(changes: any[]): TjkJockeyChanges.Change[] {
+  protected transformChanges(changes: any[]): TjkJockeyChanges.Change[] {
     return changes.map<TjkJockeyChanges.Change>((change) => {
       const {
         KOSUNO: runNumber,
@@ -47,4 +51,4 @@ class JockeyChangesParser extends Parser<TjkJockeyChanges.Race[]> {
   }
 }
 
-export default JockeyChangesParser;
+export default JockeyChangesTransformer;

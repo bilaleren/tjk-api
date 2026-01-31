@@ -1,13 +1,13 @@
 import type { HorseAgf, BestGrade, RaceRunway, RaceWeather } from '../types';
 
-abstract class Parser<TReturn> {
-  abstract parse(value: unknown): TReturn;
+abstract class Transformer<TReturn> {
+  abstract transform(value: unknown): TReturn;
 
   protected isId(value: unknown): value is string {
     return typeof value === 'string' && value !== '' && value !== '0';
   }
 
-  protected parseRunway(value: any): RaceRunway {
+  protected transformRunway(value: any): RaceRunway {
     const { cim: grass, kum: sand } = value;
 
     return {
@@ -22,7 +22,7 @@ abstract class Parser<TReturn> {
     };
   }
 
-  protected parseWeather(value: any): RaceWeather {
+  protected transformWeather(value: any): RaceWeather {
     const { DURUM: status, NEM: moisture, SICAKLIK: temperature } = value;
 
     return {
@@ -32,7 +32,7 @@ abstract class Parser<TReturn> {
     };
   }
 
-  protected parseHorseAgf(
+  protected transformHorseAgf(
     horse: any,
     index: 1 | 2,
     rateKeyPrefix: string = 'AGF',
@@ -53,7 +53,7 @@ abstract class Parser<TReturn> {
     return undefined;
   }
 
-  protected parseBestGrade(value: any): BestGrade | undefined {
+  protected transformBestGrade(value: any): BestGrade | undefined {
     const {
       ENIYIDERECE: timing,
       ENIYIDERECEACIKLAMA: description,
@@ -82,4 +82,4 @@ abstract class Parser<TReturn> {
   }
 }
 
-export default Parser;
+export default Transformer;

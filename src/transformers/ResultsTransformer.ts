@@ -1,88 +1,77 @@
-import Parser from './Parser';
+import Transformer from './Transformer';
 import { isDefined, parseNumber } from '../utils';
-import { GALLOP_VIDEO_CDN } from '../constants';
-import type { TjkBetProgram } from '../types';
+import type { TjkResults } from '../types';
 
-class BetProgramParser extends Parser<TjkBetProgram.Race[]> {
-  parse(races: unknown): TjkBetProgram.Race[] {
+class ResultsTransformer extends Transformer<TjkResults.Race[]> {
+  static create(): ResultsTransformer {
+    return new ResultsTransformer();
+  }
+
+  transform(races: unknown): TjkResults.Race[] {
     if (!Array.isArray(races)) {
       return [];
     }
 
-    return races.map<TjkBetProgram.Race>((race) => {
+    return races.map<TjkResults.Race>((race) => {
       const {
-        KOD: id,
-        CARDID: cardId,
         KEY: key,
         YER: location,
         TARIH: raceDate = '',
         HIPODROM: hippodrome,
         ACILIS: openingTime,
         KAPANIS: closingTime,
-        SIRA: order,
         YURTDISI: abroad = false,
         GECE: isNight = false,
         hava: weather,
         pist: runway,
-        kosular: runs = [],
-        bahisler: bets = [],
-        fixedbets: fixedBets
+        kosular: raceRuns = []
       } = race;
 
-      const date = raceDate.split('/').reverse().join('-');
-
       return {
-        id,
-        cardId,
         key,
-        date,
+        date: raceDate.split('/').reverse().join('-'),
         location,
         hippodrome,
         openingTime,
         closingTime,
-        order: order ? +order : undefined,
         abroad,
         isNight,
-        runway: this.parseRunway(runway),
-        weather: this.parseWeather(weather),
-        runs: this.parseRuns(runs, new Date(date)),
-        bets: this.parseBets(bets),
-        fixedBets
+        runway: this.transformRunway(runway),
+        weather: this.transformWeather(weather),
+        runs: this.transformRuns(raceRuns)
       };
     });
   }
 
-  private parseRuns(runs: any[], raceDate: Date): TjkBetProgram.Run[] {
-    return runs.map<TjkBetProgram.Run>((run) => {
+  protected transformRuns(runs: any[]): TjkResults.Run[] {
+    return runs.map<TjkResults.Run>((run) => {
       const {
-        KOD: _runId,
         NO: no,
         SAAT: startTime,
-        PISTKODU: runwayCode,
         PIST: runwayName,
         MESAFE: runwayDistance,
         KISALTMA: shortedName,
         GRUP: groupName,
         GRUPKISA: groupShortName,
         CINSDETAY: condition,
-        CINSIYET: gender,
+        SON800: timing800,
         ONEMLIADI: runName,
+        CINSIYET: genderName,
         OZELADI: specialName,
         ikramiyeler: awards = [],
         primler: bonuses = [],
         DOVIZ: currencyUnit,
         BILGI: info,
+        bahisler: bets = [],
+        VIDEO: videoUrl,
+        FOTOFINISH: photoFinishUrl,
         atlar: horses = []
       } = run;
 
-      const runId = this.isId(_runId) ? _runId : undefined;
-
       return {
-        id: runId,
         no: +no,
         startTime,
         runway: {
-          code: runwayCode,
           name: runwayName,
           distance: +runwayDistance
         },
@@ -90,45 +79,57 @@ class BetProgramParser extends Parser<TjkBetProgram.Race[]> {
         groupName,
         groupShortName: groupShortName || undefined,
         condition,
-        gender: gender || undefined,
+        timing800: timing800 || undefined,
         runName: runName || undefined,
+        genderName: genderName || undefined,
         specialName: specialName || undefined,
         awards: awards.map((value: any) => parseNumber(value, 0)),
         bonuses: bonuses.map((value: any) => parseNumber(value, 0)),
         currencyUnit,
         info,
-        horses: this.parseHorses(horses, runId, raceDate)
+        bets: this.transformBets(bets),
+        videoUrl:
+          videoUrl && typeof videoUrl === 'string'
+            ? videoUrl.replace('http://', 'https://')
+            : undefined,
+        photoFinishUrl:
+          photoFinishUrl && typeof photoFinishUrl === 'string'
+            ? photoFinishUrl.replace('http://', 'https://')
+            : undefined,
+        horses: this.transformHorses(horses)
       };
     });
   }
 
-  private parseBets(bets: any[]): TjkBetProgram.RaceBet[] {
-    return bets.map<TjkBetProgram.RaceBet>((bet) => {
-      const { TYPE: id, BAHIS: name, POOLUNIT: unitPrice, kosular: runs } = bet;
+  protected transformBets(bets: any[]): TjkResults.RunBet[] {
+    return bets.map<TjkResults.RunBet>((bet) => {
+      const {
+        BAHIS: betName,
+        SONUC: result,
+        TUTAR: amount,
+        ACIKLAMA: description
+      } = bet;
 
       return {
-        id,
-        name,
-        unitPrice,
-        runs
+        name: betName,
+        result: result || undefined,
+        amount: amount ? '' + amount : undefined,
+        description: description || undefined
       };
     });
   }
 
-  private parseHorses(
-    horses: any[],
-    runId: string | undefined,
-    raceDate: Date
-  ): TjkBetProgram.Horse[] {
-    return horses.map<TjkBetProgram.Horse>((horse: any) => {
+  protected transformHorses(horses: any[]): TjkResults.Horse[] {
+    return horses.map<TjkResults.Horse>((horse) => {
       const {
-        KOD: _horseId,
         KEY: key,
         NO: no,
         AD: name,
         YAS: age,
         FOAL: foal,
         START: position,
+        SONUC: resultRank,
+        DERECE: timing,
         GANYAN: odds,
         KILO: weight,
         FAZLAKILO: extraWeight,
@@ -138,15 +139,11 @@ class BetProgramParser extends Parser<TjkBetProgram.Race[]> {
         TAKI: equipments,
         HANDIKAP: handicap,
         KGS: daysOff,
+        GECCIKIS: lateStart,
+        FARK: difference,
         EKURI: stablemate,
         APRANTI: apprentice,
         KOSMAZ: outOfRace,
-        DOGUMTARIHI: dateOfBirth,
-        JOKEYKODU: jockeyId,
-        SAHIPKODU: ownerId,
-        ANTRENORKODU: trainerId,
-        BABAKODU: fatherId,
-        ANNEKODU: motherId,
         JOKEYADI: jockeyName,
         SAHIPADI: ownerName = '',
         ANTRENORADI: trainerName = '',
@@ -157,22 +154,23 @@ class BetProgramParser extends Parser<TjkBetProgram.Race[]> {
         ANNEANNE: motherMotherName,
         BABABABA: fatherFatherName,
         BABAANNE: fatherMotherName,
-        FORMA: uniformImageUrl,
-        IDMANVIDEO: gallopVideo
+        FORMA: uniformImageUrl
       } = horse;
 
-      const horseId = this.isId(_horseId) ? _horseId : undefined;
-
       return {
-        id: horseId,
         key,
         no: +no,
         name,
         age,
-        agf1: this.parseHorseAgf(horse, 1),
-        agf2: this.parseHorseAgf(horse, 2),
+        agf1: this.transformHorseAgf(horse, 1),
+        agf2: this.transformHorseAgf(horse, 2),
         foal: foal || undefined,
         position: +position,
+        resultRank:
+          typeof resultRank === 'string' && resultRank !== ''
+            ? +resultRank
+            : undefined,
+        timing: timing || undefined,
         odds: odds ? parseNumber(odds, 0) : undefined,
         weight: isDefined(weight) ? +weight : undefined,
         extraWeight: isDefined(extraWeight) ? +extraWeight : undefined,
@@ -182,34 +180,30 @@ class BetProgramParser extends Parser<TjkBetProgram.Race[]> {
         equipments: equipments || undefined,
         handicap: handicap ? parseNumber(handicap, 0) : undefined,
         daysOff: daysOff || undefined,
-        bestGrade: this.parseBestGrade(horse),
+        lateStart: lateStart || undefined,
+        difference: difference || undefined,
+        bestGrade: this.transformBestGrade(horse),
         stablemate: stablemate || undefined,
         outOfRace: outOfRace || undefined,
-        dateOfBirth: dateOfBirth || undefined,
         jockey: {
-          id: this.isId(jockeyId) ? jockeyId : undefined,
           name: jockeyName,
           apprentice: apprentice || undefined
         },
         owner: ownerName
           ? {
-              id: this.isId(ownerId) ? ownerId : undefined,
               name: ownerName
             }
           : undefined,
         trainer: trainerName
           ? {
-              id: this.isId(trainerId) ? trainerId : undefined,
               name: trainerName
             }
           : undefined,
         grower: growerName ? { name: growerName } : undefined,
         father: {
-          id: this.isId(fatherId) ? fatherId : undefined,
           name: fatherName
         },
         mother: {
-          id: this.isId(motherId) ? motherId : undefined,
           name: motherName
         },
         motherOfFather: motherFatherName
@@ -224,23 +218,16 @@ class BetProgramParser extends Parser<TjkBetProgram.Race[]> {
         fatherOfMother: fatherMotherName
           ? { name: fatherMotherName }
           : undefined,
-        uniformImageUrl: uniformImageUrl || undefined,
-        gallopVideoUrl:
-          horseId && runId && gallopVideo
-            ? `${GALLOP_VIDEO_CDN}/${raceDate.getFullYear()}/${raceDate.getMonth() + 1}/${runId}-${horseId}.mp4`
+        uniformImageUrl:
+          typeof uniformImageUrl === 'string'
+            ? uniformImageUrl.replace(
+                /^https?:\/\/medya\.tjk\.org/,
+                'https://medya-cdn.tjk.org'
+              )
             : undefined
       };
     });
   }
-
-  protected parseWeather(value: any): TjkBetProgram.RaceWeather {
-    const { KOD: code } = value;
-
-    return {
-      code,
-      ...super.parseWeather(value)
-    };
-  }
 }
 
-export default BetProgramParser;
+export default ResultsTransformer;

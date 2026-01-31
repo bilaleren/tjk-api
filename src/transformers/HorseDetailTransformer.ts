@@ -1,9 +1,13 @@
-import Parser from './Parser';
+import Transformer from './Transformer';
 import { parseNumber } from '../utils';
 import type { TjkHorseDetail } from '../types';
 
-class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
-  parse(horse: any): TjkHorseDetail.Horse {
+class HorseDetailTransformer extends Transformer<TjkHorseDetail.Horse> {
+  static create(): HorseDetailTransformer {
+    return new HorseDetailTransformer();
+  }
+
+  transform(horse: any): TjkHorseDetail.Horse {
     const {
       KEY: key,
       AD: name,
@@ -35,8 +39,8 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
       age,
       gender,
       origin,
-      father: this.parseOrigin(father),
-      mother: this.parseOrigin(mother),
+      father: this.transformOrigin(father),
+      mother: this.transformOrigin(mother),
       isDied: isDied || undefined,
       dateOfBirth,
       dateOfDeath: dateOfDeath || undefined,
@@ -52,13 +56,13 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
         key: trainer.KEY || undefined,
         name: trainer.AD
       },
-      owners: this.parsePersons(owners, 'SAHIPADI'),
-      growers: this.parsePersons(growers, 'YETISTIRICIADI'),
-      runs: this.parseRuns(runs)
+      owners: this.transformPersons(owners, 'SAHIPADI'),
+      growers: this.transformPersons(growers, 'YETISTIRICIADI'),
+      runs: this.transformRuns(runs)
     };
   }
 
-  private parseRuns(runs: any[]): TjkHorseDetail.Run[] {
+  protected transformRuns(runs: any[]): TjkHorseDetail.Run[] {
     return runs.map<TjkHorseDetail.Run>((run) => {
       const {
         KOSU: no,
@@ -82,7 +86,7 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
         FOTOFINISH: photoFinishUrl
       } = run;
 
-      const runway = this.parseRunRunway(run);
+      const runway = this.transformRunRunway(run);
       const handicap = run.HANDIKAP
         ? run.HANDIKAP
         : runway.name === 'Kum'
@@ -106,9 +110,9 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
         earnings: parseNumber(earnings, 0),
         equipments: equipments || undefined,
         outOfRace: outOfRace || undefined,
-        jockey: this.parseRunPerson(jockey),
-        trainer: this.parseRunPerson(trainer),
-        owner: this.parseRunPerson(owner),
+        jockey: this.transformRunPerson(jockey),
+        trainer: this.transformRunPerson(trainer),
+        owner: this.transformRunPerson(owner),
         videoUrl:
           videoUrl && typeof videoUrl === 'string'
             ? videoUrl.replace('http://', 'https://')
@@ -121,7 +125,7 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
     });
   }
 
-  private parseRunRunway(run: any): TjkHorseDetail.Runway {
+  protected transformRunRunway(run: any): TjkHorseDetail.Runway {
     const {
       PISTKOD: id,
       PIST: name,
@@ -137,7 +141,7 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
     };
   }
 
-  private parseRunPerson(person: any): TjkHorseDetail.Person | undefined {
+  protected transformRunPerson(person: any): TjkHorseDetail.Person | undefined {
     const { KEY: key, AD: name } = person;
 
     if (!name) {
@@ -150,7 +154,9 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
     };
   }
 
-  private parseOrigin(value: any): TjkHorseDetail.HorseOrigin | undefined {
+  protected transformOrigin(
+    value: any
+  ): TjkHorseDetail.HorseOrigin | undefined {
     const {
       KEY: key,
       AD: name,
@@ -167,12 +173,12 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
       key: key || undefined,
       name,
       dateOfBirth: dateOfBirth || undefined,
-      father: father ? this.parseOrigin(father) : undefined,
-      mother: mother ? this.parseOrigin(mother) : undefined
+      father: father ? this.transformOrigin(father) : undefined,
+      mother: mother ? this.transformOrigin(mother) : undefined
     };
   }
 
-  private parsePersons(
+  protected transformPersons(
     persons: any[],
     nameKey: string
   ): TjkHorseDetail.Person[] {
@@ -188,4 +194,4 @@ class HorseDetailParser extends Parser<TjkHorseDetail.Horse> {
   }
 }
 
-export default HorseDetailParser;
+export default HorseDetailTransformer;

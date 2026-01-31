@@ -1,4 +1,4 @@
-import Parser from './Parser';
+import Transformer from './Transformer';
 import { isDefined, isPlainObject, parseNumber } from '../utils';
 import {
   PHOTO_CDN,
@@ -12,8 +12,14 @@ import type {
   TjkDetailedProgram
 } from '../types';
 
-class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
-  parse(hippodromes: unknown): TjkDetailedProgram.Race[] {
+class DetailedProgramTransformer extends Transformer<
+  TjkDetailedProgram.Race[]
+> {
+  static create(): DetailedProgramTransformer {
+    return new DetailedProgramTransformer();
+  }
+
+  transform(hippodromes: unknown): TjkDetailedProgram.Race[] {
     if (!isPlainObject(hippodromes)) {
       return [];
     }
@@ -34,7 +40,7 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
 
       const date = raceDate.split('/').reverse().join('-');
       const abroad = !LOCAL_HIPPODROMES.includes(key);
-      const runs = this.parseRuns(
+      const runs = this.transformRuns(
         Object.values(emiRuns as Record<string, any>),
         new Date(date)
       );
@@ -48,15 +54,18 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
         abroad,
         openingTime: openingTime || '00:00',
         closingTime: runs[runs.length - 1]?.startTime || '00:00',
-        runway: this.parseRunway(race),
-        weather: this.parseWeather(race),
+        runway: this.transformRunway(race),
+        weather: this.transformWeather(race),
         runs,
         bettingUnitPrices
       };
     });
   }
 
-  private parseRuns(runs: any[], raceDate: Date): TjkDetailedProgram.Run[] {
+  protected transformRuns(
+    runs: any[],
+    raceDate: Date
+  ): TjkDetailedProgram.Run[] {
     return runs.map<TjkDetailedProgram.Run>((run) => {
       const {
         KOSUKODU: _runId,
@@ -83,7 +92,7 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
       } = run;
 
       const runId = this.isId(_runId) ? _runId : undefined;
-      const horses = this.parseHorses(
+      const horses = this.transformHorses(
         Object.values(emiRunners),
         runId,
         raceDate
@@ -108,12 +117,12 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
         condition,
         runName: runName || undefined,
         specialName: specialName || undefined,
-        bestGrade: this.parseBestGrade(run),
-        bets: this.parseBets(bets),
-        betResults: this.parseBetResults(betResults),
+        bestGrade: this.transformBestGrade(run),
+        bets: this.transformBets(bets),
+        betResults: this.transformBetResults(betResults),
         horses,
-        awards: this.parseAwardsOrBonuses(run, 'IKRAMIYE'),
-        bonuses: this.parseAwardsOrBonuses(run, 'YPRIM'),
+        awards: this.transformAwardsOrBonuses(run, 'IKRAMIYE'),
+        bonuses: this.transformAwardsOrBonuses(run, 'YPRIM'),
         videoUrl: videoFilename
           ? `${VIDEO_CDN}/${raceDate.getFullYear()}/${raceDate.getMonth() + 1}/${videoFilename}`
           : undefined,
@@ -124,7 +133,7 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
     });
   }
 
-  private parseHorses(
+  protected transformHorses(
     horses: any[],
     runId: string | undefined,
     raceDate: Date
@@ -185,8 +194,8 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
         no: +no,
         name,
         age,
-        agf1: this.parseHorseAgf(horse, 1, 'AGFORAN', 'AGFSIRANO'),
-        agf2: this.parseHorseAgf(horse, 2, 'AGFORAN', 'AGFSIRANO'),
+        agf1: this.transformHorseAgf(horse, 1, 'AGFORAN', 'AGFSIRANO'),
+        agf2: this.transformHorseAgf(horse, 2, 'AGFORAN', 'AGFSIRANO'),
         foal: foal || undefined,
         position: +position,
         resultRank: resultRank && resultRank !== '0' ? +resultRank : undefined,
@@ -205,7 +214,7 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
           salePrice && typeof salePrice === 'string' ? salePrice : undefined,
         lateStart: lateStart || undefined,
         difference: difference || undefined,
-        bestGrade: this.parseBestGrade(horse),
+        bestGrade: this.transformBestGrade(horse),
         stablemate: stablemate && stablemate !== '0' ? stablemate : undefined,
         outOfRace: outOfRace === true || outOfRace === '-1' ? true : undefined,
         dateOfBirth: dateOfBirth || undefined,
@@ -268,7 +277,7 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
     });
   }
 
-  private parseBets(bets: any[]): TjkDetailedProgram.RunBet[] {
+  protected transformBets(bets: any[]): TjkDetailedProgram.RunBet[] {
     return bets.map<TjkDetailedProgram.RunBet>((bet) => {
       const {
         BAHISTIPKODU: code,
@@ -286,7 +295,7 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
     });
   }
 
-  private parseBetResults(
+  protected transformBetResults(
     betResults: any[]
   ): TjkDetailedProgram.RunBetResult[] {
     return betResults.map<TjkDetailedProgram.RunBetResult>((bet) => {
@@ -312,7 +321,7 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
     });
   }
 
-  private parseAwardsOrBonuses(run: any, keyPrefix: string): number[] {
+  protected transformAwardsOrBonuses(run: any, keyPrefix: string): number[] {
     const values: number[] = [];
     const loopCount = run.BESINCIIKRAMIYEALIRFLG ? 5 : 4;
 
@@ -329,21 +338,24 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
     return values;
   }
 
-  private parseRunwayVariant(race: any, prefix: string): RaceRunwayVariant {
+  protected transformRunwayVariant(
+    race: any,
+    prefix: string
+  ): RaceRunwayVariant {
     return {
       status: race[prefix] || undefined,
       weight: race[prefix + 'PISTAGIRLIGI'] || 0
     };
   }
 
-  protected parseRunway(value: any): RaceRunway {
+  protected transformRunway(value: any): RaceRunway {
     return {
-      grass: this.parseRunwayVariant(value, 'CIM'),
-      sand: this.parseRunwayVariant(value, 'KUM')
+      grass: this.transformRunwayVariant(value, 'CIM'),
+      sand: this.transformRunwayVariant(value, 'KUM')
     };
   }
 
-  protected parseWeather(value: any): TjkDetailedProgram.RaceWeather {
+  protected transformWeather(value: any): TjkDetailedProgram.RaceWeather {
     const {
       HAVADURUMKODU: code,
       HAVA: status,
@@ -362,4 +374,4 @@ class DetailedProgramParser extends Parser<TjkDetailedProgram.Race[]> {
   }
 }
 
-export default DetailedProgramParser;
+export default DetailedProgramTransformer;

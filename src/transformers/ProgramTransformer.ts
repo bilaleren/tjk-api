@@ -1,14 +1,18 @@
-import Parser from './Parser';
+import Transformer from './Transformer';
 import { isDefined, parseNumber } from '../utils';
-import type { TjkResults } from '../types';
+import type { TjkProgram } from '../types';
 
-class ResultsParser extends Parser<TjkResults.Race[]> {
-  parse(races: unknown): TjkResults.Race[] {
+class ProgramTransformer extends Transformer<TjkProgram.Race[]> {
+  static create(): ProgramTransformer {
+    return new ProgramTransformer();
+  }
+
+  transform(races: unknown): TjkProgram.Race[] {
     if (!Array.isArray(races)) {
       return [];
     }
 
-    return races.map<TjkResults.Race>((race) => {
+    return races.map<TjkProgram.Race>((race) => {
       const {
         KEY: key,
         YER: location,
@@ -20,7 +24,7 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         GECE: isNight = false,
         hava: weather,
         pist: runway,
-        kosular: raceRuns = []
+        kosular: runs = []
       } = race;
 
       return {
@@ -32,15 +36,15 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         closingTime,
         abroad,
         isNight,
-        runway: this.parseRunway(runway),
-        weather: this.parseWeather(weather),
-        runs: this.parseRuns(raceRuns)
+        runway: this.transformRunway(runway),
+        weather: this.transformWeather(weather),
+        runs: this.transformRuns(runs)
       };
     });
   }
 
-  private parseRuns(runs: any[]): TjkResults.Run[] {
-    return runs.map<TjkResults.Run>((run) => {
+  protected transformRuns(runs: any[]): TjkProgram.Run[] {
+    return runs.map<TjkProgram.Run>((run) => {
       const {
         NO: no,
         SAAT: startTime,
@@ -50,7 +54,6 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         GRUP: groupName,
         GRUPKISA: groupShortName,
         CINSDETAY: condition,
-        SON800: timing800,
         ONEMLIADI: runName,
         CINSIYET: genderName,
         OZELADI: specialName,
@@ -58,9 +61,7 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         primler: bonuses = [],
         DOVIZ: currencyUnit,
         BILGI: info,
-        bahisler: bets = [],
-        VIDEO: videoUrl,
-        FOTOFINISH: photoFinishUrl,
+        BAHISLER: betInfo,
         atlar: horses = []
       } = run;
 
@@ -75,7 +76,6 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         groupName,
         groupShortName: groupShortName || undefined,
         condition,
-        timing800: timing800 || undefined,
         runName: runName || undefined,
         genderName: genderName || undefined,
         specialName: specialName || undefined,
@@ -83,40 +83,14 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         bonuses: bonuses.map((value: any) => parseNumber(value, 0)),
         currencyUnit,
         info,
-        bets: this.parseBets(bets),
-        videoUrl:
-          videoUrl && typeof videoUrl === 'string'
-            ? videoUrl.replace('http://', 'https://')
-            : undefined,
-        photoFinishUrl:
-          photoFinishUrl && typeof photoFinishUrl === 'string'
-            ? photoFinishUrl.replace('http://', 'https://')
-            : undefined,
-        horses: this.parseHorses(horses)
+        betInfo,
+        horses: this.transformHorses(horses)
       };
     });
   }
 
-  private parseBets(bets: any[]): TjkResults.RunBet[] {
-    return bets.map<TjkResults.RunBet>((bet) => {
-      const {
-        BAHIS: betName,
-        SONUC: result,
-        TUTAR: amount,
-        ACIKLAMA: description
-      } = bet;
-
-      return {
-        name: betName,
-        result: result || undefined,
-        amount: amount ? '' + amount : undefined,
-        description: description || undefined
-      };
-    });
-  }
-
-  private parseHorses(horses: any[]): TjkResults.Horse[] {
-    return horses.map<TjkResults.Horse>((horse) => {
+  protected transformHorses(horses: any[]): TjkProgram.Horse[] {
+    return horses.map<TjkProgram.Horse>((horse) => {
       const {
         KEY: key,
         NO: no,
@@ -124,8 +98,6 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         YAS: age,
         FOAL: foal,
         START: position,
-        SONUC: resultRank,
-        DERECE: timing,
         GANYAN: odds,
         KILO: weight,
         FAZLAKILO: extraWeight,
@@ -135,11 +107,10 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         TAKI: equipments,
         HANDIKAP: handicap,
         KGS: daysOff,
-        GECCIKIS: lateStart,
-        FARK: difference,
         EKURI: stablemate,
         APRANTI: apprentice,
         KOSMAZ: outOfRace,
+        DOGUMTARIHI: dateOfBirth,
         JOKEYADI: jockeyName,
         SAHIPADI: ownerName = '',
         ANTRENORADI: trainerName = '',
@@ -158,15 +129,10 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         no: +no,
         name,
         age,
-        agf1: this.parseHorseAgf(horse, 1),
-        agf2: this.parseHorseAgf(horse, 2),
+        agf1: this.transformHorseAgf(horse, 1),
+        agf2: this.transformHorseAgf(horse, 2),
         foal: foal || undefined,
         position: +position,
-        resultRank:
-          typeof resultRank === 'string' && resultRank !== ''
-            ? +resultRank
-            : undefined,
-        timing: timing || undefined,
         odds: odds ? parseNumber(odds, 0) : undefined,
         weight: isDefined(weight) ? +weight : undefined,
         extraWeight: isDefined(extraWeight) ? +extraWeight : undefined,
@@ -176,11 +142,10 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
         equipments: equipments || undefined,
         handicap: handicap ? parseNumber(handicap, 0) : undefined,
         daysOff: daysOff || undefined,
-        lateStart: lateStart || undefined,
-        difference: difference || undefined,
-        bestGrade: this.parseBestGrade(horse),
+        bestGrade: this.transformBestGrade(horse),
         stablemate: stablemate || undefined,
         outOfRace: outOfRace || undefined,
+        dateOfBirth: dateOfBirth || undefined,
         jockey: {
           name: jockeyName,
           apprentice: apprentice || undefined
@@ -226,4 +191,4 @@ class ResultsParser extends Parser<TjkResults.Race[]> {
   }
 }
 
-export default ResultsParser;
+export default ProgramTransformer;
